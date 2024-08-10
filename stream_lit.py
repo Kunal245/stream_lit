@@ -1,47 +1,39 @@
 import streamlit as st
 from geopy.distance import geodesic
+from geopy.point import Point
 import random
 
-def generate_random_coordinates(lat, lon, radius):
-  """Generates random coordinates within a given radius."""
+def random_coordinate_within_radius(lat, lon, radius):
+    # Convert radius from kilometers to meters
+    radius_m = radius * 1000
+    
+    # Generate a random distance within the radius
+    distance = random.uniform(0, radius_m)
+    
+    # Generate a random bearing (angle)
+    bearing = random.uniform(0, 360)
+    
+    # Generate the new random point
+    origin = Point(lat, lon)
+    destination = geodesic(meters=distance).destination(origin, bearing)
+    
+    return destination.latitude, destination.longitude
 
-  # Convert radius from kilometers to degrees
-  radius_in_degrees = radius / 111000.0
+# Streamlit UI
+st.title('Random Places Suggestion')
 
-  # Generate random angles
-  u = random.uniform(0, 1)
-  v = random.uniform(0, 1)
+# Input user location (latitude and longitude)
+user_lat = st.number_input('Enter your latitude', value=37.7749)
+user_lon = st.number_input('Enter your longitude', value=-122.4194)
 
-  # Convert to polar coordinates
-  w = radius_in_degrees * math.sqrt(u)
-  t = 2 * math.pi * v
+# Input radius
+radius = st.slider('Select radius (km)', min_value=1, max_value=100, value=10)
 
-  # Convert to Cartesian coordinates
-  x = w * math.cos(t)
-  y = w * math.sin(t)
+if st.button('Generate Random Place'):
+    random_lat, random_lon = random_coordinate_within_radius(user_lat, user_lon, radius)
+    st.write(f'Random place coordinates: Latitude: {random_lat}, Longitude: {random_lon}')
+    
+    # Provide a link to Google Maps with the coordinates
+    google_maps_url = f"https://www.google.com/maps/search/?api=1&query={random_lat},{random_lon}"
+    st.markdown(f"[View on Google Maps]({google_maps_url})")
 
-  # Adjust for the shrinking of the earth at the poles
-  x = x / math.cos(lat)
-
-  # Calculate new latitude and longitude
-  new_lat = lat + y
-  new_lon = lon + x
-
-  return new_lat, new_lon
-
-def main():
-  st.title("Random Place Generator")
-
-  # Get user's location (replace with actual location retrieval)
-  user_lat = 37.7749
-  user_lon = -122.4194
-
-  # Get radius from user
-  radius = st.number_input("Radius (kilometers)", min_value=0.1, value=1.0)
-
-  if st.button("Generate Random Place"):
-    random_lat, random_lon = generate_random_coordinates(user_lat, user_lon, radius)
-    st.write(f"Random Coordinates: ({random_lat}, {random_lon})")
-
-if __name__ == "__main__":
-  main()
